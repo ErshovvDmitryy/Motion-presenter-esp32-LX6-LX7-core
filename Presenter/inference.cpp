@@ -3,6 +3,7 @@
 #include "gesture_model_data.h"
 #include "motionHistory.h"
 #include "transport.h"
+#include "system.h"
 
 #include "tflm_esp32.h"
 
@@ -191,12 +192,8 @@ int runInference(MotionSample* window, int len) {
         }
     }
 
-    if (!transportIsRecording()) {
-        Serial.printf("Output: ");
-        for (int i = 0; i < NUM_CLASSES; i++) {
-            Serial.printf("%.2f ", probs[i]);
-        }
-        Serial.printf(" -> %d (%.2f%%)\n", maxIdx, maxVal * 100.0f);
+    if (getDebug() && !transportIsRecording()) {
+        transportSendInferenceResult(probs, NUM_CLASSES, (uint8_t)maxIdx, maxVal);
     }
 
     if (maxVal > 0.8f) {

@@ -24,3 +24,4 @@ void transportStopRecording();
 bool transportIsRecording();
 
 void transportSendSample(const IMU& imu);
+void transportSendInferenceResult(const float* probs, int numClasses, uint8_t maxIdx, float maxVal);

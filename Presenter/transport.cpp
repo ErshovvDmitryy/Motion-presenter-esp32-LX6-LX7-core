@@ -115,3 +115,18 @@ void transportSendSample(const IMU& imu) {
   packet[1 + sizeof(MotionSample)] = recording ? 1 : 0;
   Serial.write(packet, sizeof(packet));
 }
+
+void transportSendInferenceResult(const float* probs, int numClasses, uint8_t maxIdx, float maxVal) {
+  if (transportLink != LINK_SERIAL) return;
+
+  const int PROBS_BYTES = numClasses * sizeof(float);
+  const int PACKET_SIZE = 1 + PROBS_BYTES + 1 + sizeof(float);
+
+  uint8_t packet[PACKET_SIZE];
+  packet[0] = 108;
+  memcpy(&packet[1], probs, PROBS_BYTES);
+  packet[1 + PROBS_BYTES] = maxIdx;
+  memcpy(&packet[1 + PROBS_BYTES + 1], &maxVal, sizeof(float));
+
+  Serial.write(packet, PACKET_SIZE);
+}
