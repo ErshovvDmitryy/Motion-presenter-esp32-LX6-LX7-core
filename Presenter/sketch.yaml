@@ -1,0 +1,5 @@
+# LX6 (classic ESP32) build config for this self-contained sketch.
+# TFLM is vendored locally in ../libraries/tflm_esp32 (compiles from source for LX6).
+# Arduino IDE: open this sketch and select board "ESP32 Dev Module".
+# CLI:  arduino-cli compile --libraries "D:\ProjectPresenterLX6\libraries" --fqbn esp32:esp32:esp32 .
+default_fqbn: esp32:esp32:esp32
