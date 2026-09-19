@@ -88,7 +88,7 @@ Unknown: 2 gestures. Total samples: 7047
 ## STEP 2: Data preparation
 
 The data was prepared using a custom C++ application: extraneous information was trimmed, and start- and end-of-movement flags were set.
-![Схема](img/ExampleTrim.png)
+![Scheme](img/ExampleTrim.png)
 
 This makes it possible to extract training windows while preserving the temporal structure of each gesture.
 The data preparation tool is one of my projects available on GitHub.
@@ -140,6 +140,8 @@ The current model achieved approximately 95% accuracy on the test dataset after 
 |accuracy           | -      | -      | 0.9501 | 381 |
 |macro avg          | 0.9513 | 0.9516 | 0.9512 | 381 |
 |weighted avg       | 0.9496 | 0.9501 | 0.9495 | 381 |
+
+![Scheme](img/TrainingHistory.png)
 
 ```
 The scripts I use are located in the "/scripts" folder.
