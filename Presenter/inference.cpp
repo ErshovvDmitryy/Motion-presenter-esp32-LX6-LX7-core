@@ -15,25 +15,9 @@
 #define TF_NUM_OPS 11
 #define ARENA_SIZE MODEL_ARENA_BYTES
 
-const float mean[6] = {
-    -0.00831f, 0.00165f, 0.00069f,
-    0.00271f, 0.00001f, 0.00012f
-};
-
-const float stddev[6] = {
-    0.08723187f, 0.18882504f, 0.13767117f,
-    0.11765759f, 0.14244981f, 0.21598291f
-};
-
-/*const float mean[6] = {
-    -0.002299f, 0.000006f, -0.001371f,
-    0.001936f, 0.000787f, -0.000869f
-};
-
-const float stddev[6] = {
-    0.067546f, 0.122460f, 0.107445f,
-    0.098925f, 0.117575f, 0.167928f
-};*/
+// Параметры нормализации берутся из единой конфигурации модели (modelConfig.h).
+const float (&mean)[MODEL_FEATURES]   = MODEL_MEAN;
+const float (&stddev)[MODEL_FEATURES] = MODEL_STDDEV;
 
 // ============================================================================
 // ГЛОБАЛЬНЫЕ ОБЪЕКТЫ TFLM (создаём один раз, используем повторно)
@@ -92,6 +76,9 @@ bool initInference() {
     Serial.printf("   Model size: %d bytes\n", gesture_model_len);
     Serial.printf("   Input size: %d\n", NUM_INPUTS);
     Serial.printf("   Output size: %d\n", NUM_CLASSES);
+    for (int i = 0; i < MODEL_CLASSES; i++) {
+        Serial.printf("      class %2d: %s\n", i, CLASS_NAMES[i]);
+    }
 
     return true;
 }

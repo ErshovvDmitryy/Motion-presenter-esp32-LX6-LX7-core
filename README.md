@@ -155,7 +155,15 @@ When using the model on the device, accuracy decreases due to:
 
 ## Running the model in device
 
-The weights file is moved to the project's code folder. If the model has been modified (e.g., the number of classes or layers), the parameters in `modelConfig.h` are updated. The code is then compiled (the project currently uses the Arduino IDE) and flashed onto the microcontroller.
+The weights file is moved to the project's code folder. If the model has been modified, the parameters in `modelConfig.h` are updated. `modelConfig.h` is the single source of truth for anything model-specific:
+
+- `MODEL_WINDOW` / `MODEL_CLASSES` — window length and class count
+- `enum ClassId` — class index order must match the training report (`labels.txt`)
+- `gestureActionById()` — class-to-action binding (which gesture triggers which command)
+- `CLASS_NAMES` — class names for serial debug output
+- `MODEL_MEAN` / `MODEL_STDDEV` — input normalization parameters from training
+
+An inconsistent `MODEL_CLASSES` vs `ClassId` fails at compile time via `static_assert`. The code is then compiled (the project currently uses the Arduino IDE) and flashed onto the microcontroller.
 
 For the ESP32-WROOM-32 (Xtensa LX6 core), the current firmware uses: :
 ```

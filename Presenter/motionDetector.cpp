@@ -6,6 +6,15 @@
 
 MotionDetector motionDetector;
 
+// Перевод действия в HID-код (клавиши — аппаратная привязка, от модели не зависит).
+static uint8_t hidKeyForAction(GestureAction action) {
+    switch (action) {
+        case GEST_PREV_SLIDE: return KEY_LEFT_ARROW;
+        case GEST_NEXT_SLIDE: return KEY_RIGHT_ARROW;
+        default:              return 0;
+    }
+}
+
 MotionDetectorState MotionDetector::state() const {
   return m_state;
 }
@@ -51,8 +60,11 @@ void MotionDetector::updateState(const IMU& imu) {
 
             int gesture = -1;
             while (takeInferenceResult(gesture)) {
-                if (gesture == 4 || gesture == 5) {
+                GestureAction action = (gesture >= 0 && gesture < CLASS_COUNT)
+                                       ? gestureActionById((ClassId)gesture)
+                                       : GEST_NONE;
 
+                if (action != GEST_NONE) {
                     if (gesture == voteClass) {
                         voteCount = (voteCount < DETECT_VOTE_N) ? voteCount + 1 : voteCount;
                     } else {
@@ -61,19 +73,17 @@ void MotionDetector::updateState(const IMU& imu) {
                     }
 
                     if (voteCount >= DETECT_VOTE_N && !hidSent) {
-                        if (gesture == 4) transportSendHID(KEY_LEFT_ARROW);
-                        else              transportSendHID(KEY_RIGHT_ARROW);
+                        transportSendHID(hidKeyForAction(action));
 
-                    gestureCount++;
-                    hidSent = true;
-                    cooldownUntil = millis() + HID_COOLDOWN_MS;
-                    m_state = DET_COOLDOWN;
-                    if (!transportIsRecording()) {
-                        Serial.printf("Gesture: %d (voted %d) -> HID\n", gesture, voteCount);
+                        gestureCount++;
+                        hidSent = true;
+                        cooldownUntil = millis() + HID_COOLDOWN_MS;
+                        m_state = DET_COOLDOWN;
+                        if (!transportIsRecording()) {
+                            Serial.printf("Gesture: %d (voted %d) -> HID\n", gesture, voteCount);
                         }
                     }
                 } else {
-                    
                     voteClass = -1;
                     voteCount = 0;
                 }
