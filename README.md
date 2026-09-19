@@ -56,7 +56,11 @@ The current model recognizes:
  - SwipeUp
  - Unknown
 ```
+# TODO
 
+1. Work is underway to compile a dataset and develop training methods for a new model to improve gesture detection.
+2. Enable dataset collection and device debugging via BLE/GATT.
+3. Finish implementing functions for collecting various debugging information.
 
 # Gesture recognition pipeline
 
@@ -146,41 +150,95 @@ These results are based on the prepared test dataset and should not be interpret
 When using the model on the device, accuracy decreases due to:
 1. transitions between gestures (the window may contain too little information about the gesture)
 2. This is due to the small dataset, which was trained on the gestures of only two people. In reality, gesture mechanics can vary drastically from person to person.
-3. 
 
-## STEP 5: Running the model in device
+## Running the model in device
 
 The weights file is moved to the project's code folder. If the model has been modified (e.g., the number of classes or layers), the parameters in `modelConfig.h` are updated. The code is then compiled (the project currently uses the Arduino IDE) and flashed onto the microcontroller.
 
-In esp32 WROOM (Xtensa LX6 core):
+For the ESP32-WROOM-32 (Xtensa LX6 core), the current firmware uses: :
 ```
 Sketch uses 1285561 bytes (61%) of program storage space. Maximum is 2097152 bytes.
 Global variables use 46028 bytes (14%) of dynamic memory, leaving 281652 bytes for local variables. Maximum is 327680 bytes.
 ```
 
-Using partition scheme:
+The current partition scheme is:
 ```
 NO OTA ( 2MB APP / 2MB SPIFFS ) 
 ```
 
-## STEP 6: Usage experience
+## Gesture decision logic
 
-While the device is operating, inference data is transmitted via the serial port.
+A single inference is not enough to trigger a presentation command.
 
-Subjectively, the CW and CCW rotation classes and the right swipe are recognized most accurately (~90–95%). For other gestures, the model achieves an accuracy of 85%. Executing an HID command requires more than two consecutive inferences with a model confidence level exceeding 75%. Following this, the gesture's HID command is not re-sent for 600 ms.
+The current firmware uses consecutive inference results and confidence filtering to reduce accidental commands.
 
-For swipe gestures, the HID command is sent in 7–8 out of 10 attempts on average.
+The current logic requires:
+- more than two consecutive matching inferences
+- model confidence above 75%
+- a voting condition between recent predictions
+- 600 ms cooldown after sending a command
 
-For rotation gestures, this occurs in about 9–10 out of 10 attempts.
+This prevents the same gesture from repeatedly triggering the HID command while the hand is still moving.
 
+# Usage experience
 
-For model on 11,640 parameters average inference time of about 77–80 ms.
+In informal testing, the recognition rate depends strongly on the gesture and execution style.
 
-## TODO
+Subjectively observed results:
+- CircleCCW and CircleCW: approximately 90–95%
+- SwipeRight: approximately 90–95%
+- other swipe gestures: approximately 85%
 
-1. Work is underway to compile a dataset and develop training methods for a new model to improve gesture detection.
-2. Enable dataset collection and device debugging via BLE/GATT.
-3. Finish implementing functions for collecting various debugging information.
+The HID command is successfully triggered in approximately:
+- 7–8 out of 10 attempts for swipe gestures
+- 9–10 out of 10 attempts for rotation gestures
+
+These numbers are based on personal testing rather than a controlled benchmark.
+
+# Performance
+
+On ESP32-WROOM-32 (Xtensa LX6 core):
+
+The current model contains:
+- Parameters: 11,640
+- average inference time: ~77–80 ms
+
+On ESP32-WROOM-32 (Xtensa LX7 core):
+-not tested
+
+Inference is performed locally on the ESP32 without sending the motion data to a computer for classification.
+
+This is one of the main goals of the project: keeping the complete gesture recognition pipeline on the embedded device.
+
+# Communication
+
+## BLE
+Used for send HID (uman Interface Device) commands.
+Examples inclide:
+- SwipeRight -> next slide
+- SwipeLeft ->previous slide
+
+## Physics buttons
+Used for send HID commands:
+- BTN_UP
+- BTN_DOWN
+- BTN_LEFT
+- BTN_RIGHT
+- BTN_PLAY
+
+Used to interact with the device
+- BTN_GESTURE -> on press switch gesture mode
+- BTN_PLAY -> on realesed after 5s hold -> start debug mode
+- BTN_LEFT -> on hold 600 ms -> debug IMU on serial port or bluetooth
+
+## BLE/GATT (in work)
+BLE/GATT is being developed for:
+
+- Dataset collection
+- Device debugging
+- Sending IMU data
+- Receiving configuration information
+- Collecting inference information
 
 ## Project code structure
 
