@@ -35,7 +35,7 @@
 #define DETECT_VOTE_N 1
 
 // Пауза (мс) после отправки HID, до которой новые детекции игнорируются.
-#define HID_COOLDOWN_MS 800
+#define HID_COOLDOWN_MS 600
 
 // Размер тензорной арены TFLM (может потребоваться под конкретную модель).
 #define MODEL_ARENA_BYTES (80 * 1024)

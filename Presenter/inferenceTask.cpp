@@ -33,12 +33,13 @@ static void inferenceTask(void* param) {
         memcpy(localWindow, s_window, sizeof(s_window));
         portEXIT_CRITICAL(&s_mux);
 
-        //unsigned long t0 = micros();
+        unsigned long t0 = micros();
         int cls = runInference(localWindow, MODEL_WINDOW);
-        /*unsigned long dt = micros() - t0;
+
+        unsigned long dt = micros() - t0;
         if (!transportIsRecording()) {
             Serial.printf("Infer: %lu us\n", dt);
-        }*/
+        }
 
         portENTER_CRITICAL(&s_mux);
         s_resultClass = cls;
