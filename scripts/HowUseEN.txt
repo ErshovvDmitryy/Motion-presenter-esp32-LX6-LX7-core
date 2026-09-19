@@ -1,0 +1,108 @@
+HOW TO USE THE TRAINING SCRIPTS
+================================
+
+Pipeline:  train_model.py -> convert_to_int8.py -> validate.py -> convert_to_header.py
+
+All scripts are run FROM the `scripts` folder (all generated files appear
+next to the script). Install dependencies before running:
+
+    pip install tensorflow numpy pandas scikit-learn matplotlib
+
+DATASET STRUCTURE
+-----------------
+The dataset folder contains class folders; each class folder holds CSV files
+of motions. Each CSV row = one IMU sample (6 columns: ax, ay, az, gx, gy, gz),
+50 rows per file (one motion window).
+
+A ready-to-use dataset is provided here: TEST3_50_10/
+  + report.txt — a report describing how it was sliced (window, bias, gesture count).
+
+The class folder name = the model class name. The scripts build the class list
+in ALPHABETICAL ORDER via os.listdir, so the order in class_names.txt may differ
+from the "manual" folder order — that's fine, just use exactly the order written
+in class_names.txt.
+
+The dataset path is hard-coded in each script. Change it to your own before running:
+
+  train_model.py      ->  DATASET_PATH = "TEST_BIG_PACK_50_20"
+  convert_to_int8.py  ->  dataset_path = "TEST_BIG_PACK_50_20"
+  validate.py         ->  dataset_path = "TEST_BIG_PACK_50_20"
+  analyz.py           ->  dataset_path = "TEST_BIG_PACK_50_20"
+
+STEP 1. TRAIN THE MODEL — train_model.py
+----------------------------------------
+    python train_model.py
+
+  Produces:
+    - gesture_model.h5         trained Keras model
+    - norm_params.npz          mean / std (Z-score normalization parameters)
+    - class_names.txt          CLASS ORDER = output index order of the model!
+    - training_history.png     training curves
+    - gesture_model.tflite     float32 TFLite
+
+  The console prints the normalization parameters:
+      Mean: [...]
+      Std:  [...]
+  You'll need them later for MODEL_MEAN / MODEL_STDDEV in the firmware;
+  they can also be extracted from norm_params.npz.
+
+STEP 2. QUANTIZE TO INT8 — convert_to_int8.py
+---------------------------------------------
+    python convert_to_int8.py
+
+  Reads gesture_model.h5 + norm_params.npz + the dataset (~30% of files,
+  max 500) for calibration and produces the quantized model:
+
+    - gesture_model_int8.tflite   int8 (for TFLM on ESP32)
+
+STEP 3. VERIFY QUANTIZATION — validate.py
+-----------------------------------------
+    python validate.py
+
+  Compares float32 (gesture_model.h5) and int8 (gesture_model_int8.tflite)
+  on the test set:
+    - float32 accuracy
+    - int8 accuracy
+    - the difference between them (large gap = poor quantization)
+    - detailed per-class report (classification_report)
+  Saves the results to model_comparison.txt.
+
+  Rule of thumb: an accuracy drop within ~1–2% is considered successful
+  quantization. If the drop is larger — check normalization (analyz.py) or
+  retrain / use a different calibration strategy.
+
+  Optionally, see analyz.py — it estimates data ranges after Z-score and
+  int8 suitability (levels per unit).
+
+STEP 4. EXPORT TO HEADER — convert_to_header.py
+-----------------------------------------------
+    python convert_to_header.py
+
+  Reads gesture_model_int8.tflite and generates:
+
+    - gesture_model_data.h   byte array + model length
+
+  Copy it into the firmware (replacing the old one):
+
+    Presenter/gesture_model_data.h
+
+FIRMWARE CONFIGURATION (Presenter/modelConfig.h)
+------------------------------------------------
+After changing the model, sync the single config file:
+
+  MODEL_WINDOW            number of rows in the window (model input),
+                          for the current pipeline = 49
+  MODEL_CLASSES           number of classes = number of lines in class_names.txt
+  enum ClassId            order must match class_names.txt exactly
+                          (element index = line number in class_names.txt)
+  CLASS_NAMES             class names (mirror of the enum)
+  MODEL_MEAN / STDDEV     parameters from norm_params.npz / train_model.py output
+  gestureActionById()     which class -> which device action
+                          (e.g. SwipeLeft -> GEST_PREV_SLIDE)
+
+If MODEL_CLASSES and the enum ClassId count diverge, the firmware won't
+compile (static_assert). This is a safety net against mistakes.
+
+Important: model output classes are numbered BY THE LINE ORDER of
+class_names.txt, not by name. If in a new training run SwipeLeft ends up
+not 4th — simply reorder the enum in modelConfig.h to match the new order.
