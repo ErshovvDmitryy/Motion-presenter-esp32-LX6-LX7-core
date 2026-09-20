@@ -6,8 +6,8 @@ The device uses an MPU-6050 inertial sensor to recognize hand gestures and conve
 
 The project currently targets dual-core ESP32 devices:
 
-- ESP32-WROOM-32 — Xtensa LX6
-- ESP32-S3 — Xtensa LX7
+- ESP32-WROOM-32 ( Xtensa LX6 core ) -Сonfirmed by tests
+- ESP32-S3 ( Xtensa LX7 core) - Expected to work out-of-the-box via source-code compilation.
 
 The current implementation was developed and tested primarily on the ESP32-WROOM-32.
 
